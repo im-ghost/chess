@@ -1,50 +1,36 @@
-import {useEffect,useState} from 'react';
-import './App.css';
-import { ChessBoard } from "react-chessboard";
-import { Chess } from "chessjs"
-import eruda from "eruda"
-function App() {
-  const [game,setGame] = useState(new Chess())
-  const saveGameMutate = (modify) =>{
-    return setGame((g)=>{
-      const update = {...g}
-      modify(update)
-      return update
-    })
+import { useState } from "react";
+import  { Chess} from "chess.js";
+import { Chessboard } from "react-chessboard";
+
+export default function App() {
+  const [game, setGame] = useState(new Chess());
+
+  function makeAMove(move) {
+    const gameCopy = { ...game };
+    const result = gameCopy.move(move);
+    setGame(gameCopy);
+    return result; // null if the move was illegal, the move object if the move was legal
   }
-  const computerMovement = () =>{
-    const possibleMove = game.move();
-    if(game.is_over() || game.in_draw() || possibleMove.length < 0) return;
-    const randIndex = Math.floor(Math.random()*possibleMove.length)
-    saveGameMutate((game)=>{
-      game.move(possibleMove[randIndex])
-    })
+
+  function makeRandomMove() {
+    const possibleMoves = game.moves();
+    if (game.game_over() || game.in_draw() || possibleMoves.length === 0) return; // exit if the game is over
+    const randomIndex = Math.floor(Math.random() * possibleMoves.length);
+    makeAMove(possibleMoves[randomIndex]);
   }
-  const onDrop = (source, target) =>{
-    let move = null
-    move= game.move({
-      from:source,
-      to:target,
-      promotion:"q"
-    })
-    if(move === null) return false
-    setTimeout(function() {
-      computerMovement()
-    }, 200);
+
+  function onDrop(sourceSquare, targetSquare) {
+    const move = makeAMove({
+      from: sourceSquare,
+      to: targetSquare,
+      promotion: "q", // always promote to a queen for example simplicity
+    });
+
+    // illegal move
+    if (move === null) return false;
+    setTimeout(makeRandomMove, 200);
     return true;
   }
-  useEffect(()=>{
-    alert("hie");
-    eruda.init()
-  },[])
-  return (
-    <div className="App">
-     <ChessBoard
-       postion={game.fen()}
-       onDrop={onDrop}
-      />
-    </div>
-  );
-}
 
-export default App;
+  return <Chessboard position={game.fen()} onPieceDrop={onDrop} />;
+}
